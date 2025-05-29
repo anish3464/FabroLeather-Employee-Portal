@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fabro Leather - Car Seat Management</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+</head>
+<body>
+    <div class="topbar">
+        <h1>Fabro Leather Car Seat Management</h1>
+        <div class="nav-right">
+            <div class="profile-dropdown">
+                <div class="profile-icon">👤 Profile</div>
+                <div class="profile-dropdown-content">
+                    <a>Signed in as <strong>{{ request.user.username }}</strong></a>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'logout' %}">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="tile" onclick="window.location.href='{% url 'add_complaint' %}'">
+            <h2>Add Complaint</h2>
+        </div>
+        <div class="tile" onclick="window.location.href='{% url 'add_car_details' %}'">
+            <h2>Add Car</h2>
+        </div>
+        <div class="tile" onclick="window.location.href='{% url 'master_settings' %}'">
+            <h2>Master Settings</h2>
+        </div>
+        <div class="tile" onclick="window.location.href='{% url 'complaint_list' %}'">
+            <h2>Complaint List</h2>
+        </div>
+    </div>
+</body>
+</html>

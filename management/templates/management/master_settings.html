@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Settings</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+{% include 'management/base.html' %}
+<body>
+    <h2>Master Settings</h2>
+
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Add Master Setting</button>
+    </form>
+
+    {% for category, settings in master_settings.items %}
+        <h3>{{ category }}</h3>
+        <ul>
+            {% for setting in settings %}
+                <li>
+                    {{ setting.name }}
+                    <a href="{% url 'delete_master_setting' setting.id %}" class="delete-button">🗑️ Delete</a>
+                </li>
+            {% empty %}
+                <li>No settings for this category.</li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
+</body>
+</html>

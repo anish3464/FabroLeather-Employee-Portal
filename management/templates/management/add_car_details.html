@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Car Details</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+{% include 'management/base.html' %}
+<body>
+    <h2>Add Car Details</h2>
+    <form method="POST">
+    {% csrf_token %}
+    {% if form.errors %}
+        <div class="error">
+            <p>Please correct the errors below:</p>
+            <ul>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    {{ form.as_p }}
+
+    <button type="submit">Add Car Details</button>
+</form>
+
+
+    <h3>Existing Car Details</h3>
+    <input type="text" id="brandSearchInput" placeholder="Search by Brand..." class="search-input">
+    <input type="text" id="modelSearchInput" placeholder="Search by Model..." class="search-input">
+    <input type="text" id="subModelSearchInput" placeholder="Search by Sub-Model..." class="search-input">  
+<table class="car-table">
+    <thead>
+        <tr>
+            <th>Brand</th>
+            <th>Model</th>
+            <th>Sub-Model</th>
+            <th>Year Range</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for car in car_data %}
+            <tr>
+                <td>{{ car.brand }}</td>
+                <td>{{ car.model }}</td>
+                <td>{{ car.sub_model }}</td>
+                <td>{{ car.year_start }} - {{ car.year_end }}</td>
+                <td><a href="{% url 'delete_car_detail' car.id %}" class="delete-button">🗑️</a></td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="5">No car details added yet.</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% if conflict %}
+<div id="conflictModal" class="modal" style="display:block;">
+    <div class="modal-content">
+        <span class="close" onclick="document.getElementById('conflictModal').style.display='none'">&times;</span>
+        <h3>Car Already Exists with Overlapping Year Range</h3>
+        <p><strong>Brand:</strong> {{ conflict.brand }}</p>
+        <p><strong>Model:</strong> {{ conflict.model }}</p>
+        <p><strong>Sub-Model:</strong> {{ conflict.sub_model }}</p>
+        <p><strong>Years:</strong> {{ conflict.year_start }} - {{ conflict.year_end }}</p>
+    </div>
+</div>
+{% endif %}
+    
+<!-- Duplicate Car Modal -->
+<div id="duplicateModal" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Duplicate Car Entry</h3>
+            <span class="modal-close" onclick="closeDuplicateModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>This car has already been added to the system.</p>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeDuplicateModal()">OK</button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Modal Box */
+.modal-box {
+    background: #1e1e1e;
+    border: 1px solid #444;
+    color: #fff;
+    width: 400px;
+    border-radius: 8px;
+    overflow: hidden;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Modal Header */
+.modal-header {
+    padding: 10px 20px;
+    background: #2a2a2a;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Modal Body */
+.modal-body {
+    padding: 20px;
+    text-align: center;
+}
+
+/* Modal Footer */
+.modal-footer {
+    padding: 10px 20px;
+    background: #2a2a2a;
+    text-align: right;
+}
+
+/* Close Button */
+.modal-close {
+    cursor: pointer;
+    font-size: 24px;
+}
+
+/* Fade Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+.car-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    color: #fff;
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+}
+
+.car-table th, .car-table td {
+    padding: 10px;
+    border: 1px solid #444;
+    text-align: center;
+}
+
+.car-table th {
+    background-color: #1e1e1e;
+    font-weight: bold;
+}
+
+.delete-button {
+    color: red;
+    text-decoration: none;
+    font-size: 18px;
+}
+
+.delete-button:hover {
+    text-decoration: underline;
+}
+</style>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+    const brandInput = document.getElementById("brandInput");
+    const modelInput = document.getElementById("modelInput");
+    const subModelInput = document.getElementById("subModelInput");
+    const rows = document.querySelectorAll("#carTableBody tr");
+
+    function filterTable() {
+        const brandVal = brandInput.value.trim().toLowerCase();
+        const modelVal = modelInput.value.trim().toLowerCase();
+        const subModelVal = subModelInput.value.trim().toLowerCase();
+
+        rows.forEach(row => {
+            const brand = row.getAttribute("data-brand");
+            const model = row.getAttribute("data-model");
+            const subModel = row.getAttribute("data-submodel");
+
+            const matchBrand = !brandVal || brand.includes(brandVal);
+            const matchModel = !modelVal || model.includes(modelVal);
+            const matchSubModel = !subModelVal || subModel.includes(subModelVal);
+
+            row.style.display = (matchBrand && matchModel && matchSubModel) ? "" : "none";
+        });
+    }
+
+    brandInput.addEventListener("input", filterTable);
+    modelInput.addEventListener("input", filterTable);
+    subModelInput.addEventListener("input", filterTable);
+});
+
+
+function closeDuplicateModal() {
+    document.getElementById("duplicateModal").style.display = "none";
+}
+
+document.getElementById("brandSearchInput").addEventListener("input", function () {
+        const input = this.value.toLowerCase();
+        const rows = document.querySelectorAll(".car-table tbody tr");
+
+        rows.forEach(row => {
+            const brandCell = row.querySelector("td:nth-child(1)");
+            const brand = brandCell ? brandCell.textContent.toLowerCase() : "";
+
+            // Show the row if input is empty or brand matches input
+            if (!input || brand.includes(input)) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    });
+document.getElementById("modelSearchInput").addEventListener("input", function () {
+        const input = this.value.toLowerCase();
+        const rows = document.querySelectorAll(".car-table tbody tr");
+
+        rows.forEach(row => {
+            const modelCell = row.querySelector("td:nth-child(2)");
+            const model = modelCell ? modelCell.textContent.toLowerCase() : "";
+
+            // Show the row if input is empty or model matches input
+            if (!input || model.includes(input)) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    }); 
+document.getElementById("subModelSearchInput").addEventListener("input", function () {
+        const input = this.value.toLowerCase();
+        const rows = document.querySelectorAll(".car-table tbody tr");
+
+        rows.forEach(row => {
+            const subModelCell = row.querySelector("td:nth-child(3)");
+            const subModel = subModelCell ? subModelCell.textContent.toLowerCase() : "";
+
+            // Show the row if input is empty or sub-model matches input
+            if (!input || subModel.includes(input)) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    }); 
+</script>
+
+{% if show_duplicate_modal %}
+<script>
+    window.onload = function() {
+        document.getElementById("duplicateModal").style.display = "flex";
+    }
+</script>
+{% endif %}
+
+
+    
+
+    
+</body>
+
+</html>
