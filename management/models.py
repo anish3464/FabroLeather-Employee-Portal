@@ -2,6 +2,7 @@ from django.db import models
 import os
 import random
 import string
+from simple_history.models import HistoricalRecords
 class Brand(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
@@ -32,21 +33,33 @@ class YearRange(models.Model):
     sub_model = models.ForeignKey(SubModel, on_delete=models.CASCADE, related_name="year_ranges")
     year_start = models.PositiveSmallIntegerField()
     year_end = models.PositiveSmallIntegerField()
+    number_of_seats = models.PositiveSmallIntegerField(null=True, blank=True)
+    number_of_doors = models.PositiveSmallIntegerField(null=True, blank=True)
+    layout_code = models.CharField(max_length=100, unique=True)
 
     class Meta:
         unique_together = ('sub_model', 'year_start', 'year_end')
 
     def __str__(self):
-        return f" ({self.year_start} - {self.year_end})"
+        return f" {self.year_start} - {self.year_end}"
+    
+class SKU(models.Model):
+    code = models.CharField(max_length=100, unique=True)
+    description = models.TextField()
+
+    def __str__(self):
+        return self.code
+
 
 class MasterSetting(models.Model):
     CATEGORY_CHOICES = [
         ('Channel', 'Channel'),
         ('Country', 'Country'),
         ('Person', 'Person'),
-        ('Case Type', 'Case Type'),
+        ('Case Category', 'Case Category'),
         ('Series', 'Series'),
         ('Material', 'Material'),
+        ('Case Sub-Category', 'Case Sub-Category'),
     ]
 
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
@@ -84,12 +97,19 @@ class Complaint(models.Model):
         limit_choices_to={'category': 'Person'}, 
         related_name="complaints_as_person"
     )
-    case_type = models.ForeignKey(
+    case_category = models.ForeignKey(
         'management.MasterSetting', 
         on_delete=models.SET_NULL, 
         null=True, 
-        limit_choices_to={'category': 'Case Type'}, 
-        related_name="complaints_as_case_type"
+        limit_choices_to={'category': 'Case Category'}, 
+        related_name="complaints_as_case_category"
+    )
+    case_sub_category = models.ForeignKey(
+        'management.MasterSetting',
+        on_delete=models.SET_NULL,
+        null=True,
+        limit_choices_to={'category': 'Case Sub-Category'},
+        related_name="complaints_as_case_sub_category"
     )
     series = models.ForeignKey(
         'management.MasterSetting', 
@@ -105,11 +125,12 @@ class Complaint(models.Model):
         limit_choices_to={'category': 'Material'}, 
         related_name="complaints_as_material"
     )
+    sku = models.ForeignKey(SKU, on_delete=models.SET_NULL, null=True, blank=True, related_name="complaints")
     brand = models.ForeignKey('management.Brand', on_delete=models.SET_NULL, null=True)
     model = models.ForeignKey('management.Model', on_delete=models.SET_NULL, null=True)
     sub_model = models.ForeignKey('management.SubModel', on_delete=models.SET_NULL, null=True, blank=True)
     year = models.ForeignKey('management.YearRange', on_delete=models.SET_NULL, null=True)
-    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')], default='Active')
+    status = models.CharField(max_length=10, choices=[('Open', 'Open'), ('Closed', 'Closed'), ('On Hold', 'On Hold')], default='Open')
     complaint_description = models.TextField()
     batch_order = models.CharField(max_length=100)
     justification_from_factory = models.TextField(blank=True, null=True)
@@ -131,4 +152,5 @@ class ComplaintMedia(models.Model):
     def __str__(self):
         return os.path.basename(self.file.name)
     
+
 

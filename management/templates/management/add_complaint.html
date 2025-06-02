@@ -8,7 +8,7 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #1e1e2f;
-            color: #f0f0f0;
+            color:rgb(240, 240, 240);
             margin: 0;
             padding: 0;
         }
@@ -80,12 +80,57 @@
         .back-link:hover {
             text-decoration: underline;
         }
+        body.light-mode {
+    background-color:rgb(181, 222, 247);
+    color: #222;
+}
+
+body.light-mode .container {
+    background-color: #fff;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    color: #222;
+}
+
+body.light-mode h2 {
+    color: #222;
+}
+
+body.light-mode label {
+    color: #555;
+}
+
+body.light-mode input[type="text"],
+body.light-mode input[type="date"],
+body.light-mode select,
+body.light-mode textarea {
+    background-color: #fff;
+    color: #222;
+    border: 1px solid #ccc;
+}
+
+body.light-mode button[type="submit"] {
+    background-color: #007bff;
+    color: #fff;
+}
+
+body.light-mode button[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+body.light-mode .back-link {
+    color: #007bff;
+}
+
+body.light-mode .back-link:hover {
+    text-decoration: underline;
+}
     </style>
 </head>
 {% include 'management/base.html' %}
 <body>
     <div class="container">
         <h2>Add Complaint</h2>
+        
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
 
@@ -115,8 +160,13 @@
             </div>
 
             <div class="form-group">
-                {{ form.case_type.label }}  
-                {{ form.case_type }}
+                {{ form.case_category.label }}  
+                {{ form.case_category }}    
+            </div>
+
+            <div class="form-group">
+                {{ form.case_sub_category.label }}  
+                {{ form.case_sub_category }}
             </div>
 
             <div class="form-group">
@@ -153,6 +203,11 @@
                 <select id="id_year" name="year" disabled required>
                     <option value="">Select Year</option>
                 </select>
+            </div>
+
+            <div class="form-group">
+                {{ form.sku.label }}  
+                {{ form.sku }}
             </div>
 
             <div class="form-group">

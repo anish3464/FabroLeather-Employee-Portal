@@ -65,6 +65,133 @@
         background-color: #424242;
         margin: 5px 0;
     }
+    .submit {
+        background-color: #4f8cff;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        font-size: 16px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    body.light-mode .navbar {
+    background-color: #ffffff;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #1e1e1e;
+    font-family: Arial, sans-serif;
+    border-bottom: 1px solid #ccc;
+}
+
+body.light-mode .navbar a {
+    color: #1e1e1e;
+    text-decoration: none;
+    margin: 0 15px;
+    font-weight: bold;
+}
+
+body.light-mode .navbar a:hover {
+    color: #007bff;
+}
+
+body.light-mode .nav-left,
+body.light-mode .nav-right {
+    display: flex;
+    align-items: center;
+}
+
+body.light-mode .profile-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+body.light-mode .profile-dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    right: 0;
+    z-index: 1;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    border: 1px solid #ddd;
+}
+
+body.light-mode .profile-dropdown-content a {
+    color: #1e1e1e;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+body.light-mode .profile-dropdown-content a:hover {
+    background-color: #f1f1f1;
+}
+
+body.light-mode .profile-dropdown:hover .profile-dropdown-content {
+    display: block;
+}
+
+body.light-mode .profile-icon {
+    cursor: pointer;
+    font-weight: bold;
+    color: #1e1e1e;
+}
+
+body.light-mode .dropdown-divider {
+    height: 1px;
+    background-color: #ddd;
+    margin: 5px 0;
+}
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 32px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  background-color: #ccc;
+  border-radius: 34px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transition: 0.4s;
+}
+
+.slider:before {
+  content: "";
+  position: absolute;
+  height: 24px;
+  width: 24px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.4s;
+}
+
+.toggle-switch input:checked + .slider {
+  background-color: #4f8cff;
+}
+
+.toggle-switch input:checked + .slider:before {
+  transform: translateX(28px);
+}
+
+
 </style>
 
 <div class="navbar">
@@ -74,7 +201,10 @@
             <a href="{% url 'add_car_details' %}">Add Car</a>
             <a href="{% url 'master_settings' %}">Master Settings</a>
             <a href="{% url 'complaint_list' %}">Complaint List</a>
+            <a href="{% url 'add_sku' %}">Add SKU</a>
+            <a href="{% url 'upload_car_csv' %}">Upload CSV</a>
     </div>
+    
     <div class="nav-right">
         <div class="profile-dropdown">
             <div class="profile-icon">👤 Profile</div>
@@ -82,9 +212,42 @@
                 <a>Signed in as <strong>{{ request.user.username }}</strong></a>
                 <div class="dropdown-divider"></div>
                 <a href="{% url 'logout' %}">Logout</a>
+                <div class="dropdown-divider"></div>
+                <div style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+                    <label for="lightModeToggle" class="body">Light Mode</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="lightModeToggle">
+                        <span class="slider"></span>
+                    </label>
+
+                </div>
             </div>
         </div>
     </div>
 </div>
+<script>
+    const lightModeToggle = document.getElementById('lightModeToggle');
+
+    // Apply saved preference on load
+    document.addEventListener("DOMContentLoaded", () => {
+        const lightMode = localStorage.getItem('lightMode') === 'true';
+        lightModeToggle.checked = lightMode;
+        applyTheme(lightMode);
+    });
+
+    lightModeToggle.addEventListener('change', () => {
+        const isLight = lightModeToggle.checked;
+        localStorage.setItem('lightMode', isLight);
+        applyTheme(isLight);
+    });
+
+    function applyTheme(light) {
+        if (light) {
+            document.body.classList.add('light-mode');
+        } else {
+            document.body.classList.remove('light-mode');
+        }
+    }
+</script>
 
     

@@ -22,19 +22,134 @@ def index(request):
     return render(request, 'management/index.html')
 
 
+from django.contrib import messages
+from io import TextIOWrapper
 @login_required
-
 def add_car_details(request):
-    show_duplicate_modal = False  # Flag for template
+    show_duplicate_modal = False
+    show_layout_code_error_modal = False
+    conflicting_car = None
 
     if request.method == "POST":
         form = CarDetailsForm(request.POST)
         if form.is_valid():
-            brand_name = form.cleaned_data["brand_name"].strip()
-            model_name = form.cleaned_data["model_name"].strip()
-            sub_model_name = form.cleaned_data["sub_model_name"].strip() or "-"
+            layout_code = form.cleaned_data["layout_code"]
+            brand_name = form.cleaned_data["brand_name"]
+            model_name = form.cleaned_data["model_name"]
+            sub_model_name = form.cleaned_data["sub_model_name"] or '-'
             year_start = form.cleaned_data["year_start"]
             year_end = form.cleaned_data["year_end"]
+            number_of_seats = form.cleaned_data["number_of_seats"]
+            number_of_doors = form.cleaned_data["number_of_doors"]
+
+            brand, _ = Brand.objects.get_or_create(name=brand_name)
+            model, _ = Model.objects.get_or_create(brand=brand, name=model_name)
+            sub_model, _ = SubModel.objects.get_or_create(model=model, name=sub_model_name)
+
+            # ✅ Check for layout code duplication
+            if YearRange.objects.filter(layout_code=layout_code).exists():
+                show_layout_code_error_modal = True
+
+            # ✅ Check for year range overlap
+            elif YearRange.objects.filter(
+                sub_model=sub_model,
+                year_start__lte=year_end,
+                year_end__gte=year_start
+            ).exists():
+                show_duplicate_modal = True
+                conflicting = YearRange.objects.filter(
+                    sub_model=sub_model,
+                    year_start__lte=year_end,
+                    year_end__gte=year_start
+                ).first()
+                conflicting_car = {
+                    "layout_code": conflicting.layout_code,
+                    "brand": brand.name,
+                    "model": model.name,
+                    "sub_model": sub_model.name,
+                    "year_start": conflicting.year_start,
+                    "year_end": conflicting.year_end,
+                    "number_of_seats": conflicting.number_of_seats,
+                    "number_of_doors": conflicting.number_of_doors
+                }
+
+            else:
+                YearRange.objects.create(
+                    sub_model=sub_model,
+                    year_start=year_start,
+                    year_end=year_end,
+                    number_of_seats=number_of_seats,
+                    number_of_doors=number_of_doors,
+                    layout_code=layout_code
+                )
+                return redirect('add_car_details')
+    else:
+        form = CarDetailsForm()
+
+    # Fetch car data
+    car_data = []
+    for brand in Brand.objects.prefetch_related('models__submodels__year_ranges').all():
+        for model in brand.models.all():
+            for sub_model in model.submodels.all():
+                for year_range in sub_model.year_ranges.all():
+                    car_data.append({
+                        "layout_code": year_range.layout_code,
+                        "id": year_range.id,
+                        "brand": brand.name,
+                        "model": model.name,
+                        "sub_model": sub_model.name,
+                        "year_start": year_range.year_start,
+                        "year_end": year_range.year_end,
+                        "seats": year_range.number_of_seats,
+                        "doors": year_range.number_of_doors
+                    })
+
+    return render(request, 'management/add_car_details.html', {
+        'form': form,
+        'car_data': car_data,
+        'show_duplicate_modal': show_duplicate_modal,
+        'show_layout_code_error_modal': show_layout_code_error_modal,
+        'conflicting_car': conflicting_car
+    })
+
+
+
+
+
+@login_required
+def delete_car_detail(request, year_range_id):
+    year_range = get_object_or_404(YearRange, id=year_range_id)
+    year_range.delete()
+    return redirect('add_car_details')
+
+@login_required
+
+def edit_car_detail(request, car_id):
+    year_range = get_object_or_404(YearRange, id=car_id)
+
+    # Prepopulate form values
+    initial_data = {
+        'layout_code': year_range.layout_code,
+        'brand_name': year_range.sub_model.model.brand.name if year_range.sub_model else '',
+        'model_name': year_range.sub_model.model.name if year_range.sub_model else '',
+        'sub_model_name': year_range.sub_model.name if year_range.sub_model else '',
+        'year_start': year_range.year_start,
+        'year_end': year_range.year_end,
+        'number_of_seats': year_range.number_of_seats,
+        'number_of_doors': year_range.number_of_doors,
+    }
+
+    if request.method == "POST":
+        form = CarDetailsForm(request.POST)
+        if form.is_valid():
+            layout_code = form.cleaned_data["layout_code"].strip()
+            brand_name = form.cleaned_data["brand_name"].strip()
+            model_name = form.cleaned_data["model_name"].strip()
+            sub_model_name = form.cleaned_data["sub_model_name"].strip() or '-'
+            year_start = form.cleaned_data["year_start"]
+            year_end = form.cleaned_data["year_end"]
+            number_of_seats = form.cleaned_data["number_of_seats"]
+            number_of_doors = form.cleaned_data["number_of_doors"]
 
             brand, _ = Brand.objects.get_or_create(name=brand_name)
             model, _ = Model.objects.get_or_create(brand=brand, name=model_name)
@@ -43,65 +158,24 @@ def add_car_details(request):
             if sub_model_name:
                 sub_model, _ = SubModel.objects.get_or_create(model=model, name=sub_model_name)
 
-            # Check for duplicates
-            # Check for year range overlap
-            conflicting_year = YearRange.objects.filter(
-                sub_model=sub_model,
-                year_start__lte=year_end,
-                year_end__gte=year_start
-            ).first()
+            # Update the existing YearRange
+            year_range.sub_model = sub_model
+            year_range.year_start = year_start
+            year_range.year_end = year_end
+            year_range.number_of_seats = number_of_seats
+            year_range.number_of_doors = number_of_doors
+            year_range.layout_code = layout_code
+            year_range.save()
 
-
-            if conflicting_year:
-                show_duplicate_modal = True
-                conflicting_car = {
-                    "brand": brand.name,
-                    "model": model.name,
-                    "sub_model": sub_model.name if sub_model else "-",
-                    "year_start": conflicting_year.year_start,
-                    "year_end": conflicting_year.year_end
-                    }
-
+            return redirect('add_car_details')
     else:
-        form = CarDetailsForm()
+        form = CarDetailsForm(initial=initial_data)
 
-    # Fetch existing car data for display
-    car_data = []
-    for brand in Brand.objects.prefetch_related('models__submodels__year_ranges').all():
-        for model in brand.models.all():
-            for sub_model in model.submodels.all():
-                for year_range in sub_model.year_ranges.all():
-                    car_data.append({
-                        "id": year_range.id,
-                        "brand": brand.name,
-                        "model": model.name,
-                        "sub_model": sub_model.name,
-                        "year_start": year_range.year_start,
-                        "year_end": year_range.year_end
-                    })
-        for year_range in YearRange.objects.filter(sub_model__isnull=True):
-            car_data.append({
-                "id": year_range.id,
-                "brand": brand.name,
-                "model": model.name,
-                "sub_model": "(No Sub-Model)",
-                "year_start": year_range.year_start,
-                "year_end": year_range.year_end
-            })
-
-    return render(request, 'management/add_car_details.html', {
+    return render(request, 'management/edit_car_detail.html', {
         'form': form,
-        'car_data': car_data,
-        'show_duplicate_modal': show_duplicate_modal,
-        'conflicting_car': conflicting_car if show_duplicate_modal else None
+        'car_id': car_id,
     })
 
-
-@login_required
-def delete_car_detail(request, year_range_id):
-    year_range = get_object_or_404(YearRange, id=year_range_id)
-    year_range.delete()
-    return redirect('add_car_details')
 
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -210,19 +284,16 @@ def complaint_list(request):
     brands = Brand.objects.all()
     countries = MasterSetting.objects.filter(id__in=Complaint.objects.values_list('country', flat=True).distinct())
     channels = MasterSetting.objects.filter(id__in=Complaint.objects.values_list('channel', flat=True).distinct())
-    case_types = MasterSetting.objects.filter(id__in=Complaint.objects.values_list('case_type', flat=True).distinct())
+    case_category = MasterSetting.objects.filter(id__in=Complaint.objects.values_list('case_category', flat=True).distinct())
+    case_sub_category = MasterSetting.objects.filter(id__in=Complaint.objects.values_list('case_sub_category', flat=True).distinct())
     persons = MasterSetting.objects.filter(id__in=Complaint.objects.values_list('person', flat=True).distinct())
     statuses = Complaint.objects.values_list('status', flat=True).distinct()
+    sku = Complaint.objects.values_list('sku__code', flat=True).distinct()
 
     # Status Pie Data
     status_qs = complaints.values('status').annotate(count=Count('status'))
     status_labels = [entry['status'] for entry in status_qs]
     status_data = [entry['count'] for entry in status_qs]
-
-    # Case Type Pie Data
-    case_type_qs = complaints.values('case_type__name').annotate(count=Count('case_type'))
-    case_type_labels = [entry['case_type__name'] for entry in case_type_qs]
-    case_type_data = [entry['count'] for entry in case_type_qs]
 
     # Country Pie Data
     country_qs = complaints.values('country__name').annotate(count=Count('country'))
@@ -233,8 +304,6 @@ def complaint_list(request):
         'complaints': complaints,
         'status_labels': status_labels,
         'status_data': status_data,
-        'case_type_labels': case_type_labels,
-        'case_type_data': case_type_data,
         'country_labels': country_labels,
         'country_data': country_data,
         'search_query': search_query,
@@ -251,9 +320,11 @@ def complaint_list(request):
         'brands': brands,
         'countries': countries,
         'channels': channels,
-        'case_types': case_types,
+        'case_category': case_category,
+        'case_sub_category': case_sub_category,
         'persons': persons,
         'statuses': statuses,
+        'sku': sku
     })
 
 
@@ -301,4 +372,162 @@ def delete_media(request, pk):
     media.file.delete()
     media.delete()
     return redirect('edit_complaint', pk=complaint_id)
+
+import csv
+import io
+import pandas as pd
+from django.http import HttpResponse
+from .models import Complaint
+
+def export_complaints(request):
+    format = request.GET.get('format', 'csv')
+
+    complaints = Complaint.objects.all()
+
+    # Apply filters like in your complaint list view
+    if 'status' in request.GET:
+        complaints = complaints.filter(status=request.GET['status'])
+    if 'case_type' in request.GET:
+        complaints = complaints.filter(case_type__name=request.GET['case_type'])
+    # Add other filters as needed...
+
+    if format == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="complaints.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow(['ID', 'Vehicle', 'Status', 'Case Type', 'Created On'])
+
+        for complaint in complaints:
+            writer.writerow([
+                complaint.complaint_id,
+                str(complaint.model),
+                complaint.status,
+                complaint.case_type if complaint.case_type else '',
+                complaint.date
+            ])
+        return response
+
+
+# views.py
+import csv
+from io import TextIOWrapper
+from django.contrib import messages
+from .forms import UploadCSVForm
+from .models import Brand, Model, SubModel, YearRange
+
+def upload_car_csv(request):
+    if request.method == "POST":
+        form = UploadCSVForm(request.POST, request.FILES)
+        if form.is_valid():
+            csv_file = TextIOWrapper(request.FILES["csv_file"].file, encoding="utf-8")
+            reader = csv.DictReader(csv_file)
+
+            new_entries = []
+            duplicates = []
+            for row in reader:
+                brand_name = row.get("brand", "").strip()
+                model_name = row.get("model", "").strip()
+                sub_model_name = row.get("sub_model", "").strip() or "-"
+                year_start = int(row.get("year_start", 0))
+                year_end = int(row.get("year_end", 0))
+                seats = int(row.get("number_of_seats", 0))
+                doors = int(row.get("number_of_doors", 0))
+                layout_code = row.get("layout_code", "").strip()
+
+                brand, _ = Brand.objects.get_or_create(name=brand_name)
+                model, _ = Model.objects.get_or_create(brand=brand, name=model_name)
+                sub_model, _ = SubModel.objects.get_or_create(model=model, name=sub_model_name)
+
+                if YearRange.objects.filter(layout_code=layout_code).exists():
+                    duplicates.append(layout_code)
+                    continue
+
+                new_entries.append(YearRange(
+                    sub_model=sub_model,
+                    year_start=year_start,
+                    year_end=year_end,
+                    number_of_seats=seats,
+                    number_of_doors=doors,
+                    layout_code=layout_code
+                ))
+
+            YearRange.objects.bulk_create(new_entries)
+
+            if duplicates:
+                messages.warning(request, f"Skipped {len(duplicates)} duplicate layout codes: {', '.join(duplicates)}")
+            messages.success(request, f"Successfully added {len(new_entries)} records.")
+            return redirect("upload_car_csv")
+    else:
+        form = UploadCSVForm()
+
+    return render(request, "management/upload_csv.html", {"form": form})
+
+from .forms import SKUForm
+from .models import SKU
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+from .models import SKU
+from .forms import SKUForm, SKUUploadForm
+
+def add_sku(request):
+    form = SKUForm()
+    skus = SKU.objects.all().order_by('code')
+
+    if request.method == "POST":
+        if "add_sku" in request.POST:
+            form = SKUForm(request.POST)
+            if form.is_valid():
+                form.save()
+                return redirect('manage_skus')
+
+        elif "upload_csv" in request.POST:
+            upload_form = SKUUploadForm(request.POST, request.FILES)
+            if upload_form.is_valid():
+                csv_file = upload_form.cleaned_data["csv_file"]
+                decoded_file = TextIOWrapper(csv_file.file, encoding='utf-8')
+                reader = csv.DictReader(decoded_file)
+
+                added = 0
+                skipped = 0
+
+                for row in reader:
+                    code = row.get('code', '').strip()
+                    description = row.get('description', '').strip()
+                    if code and not SKU.objects.filter(code=code).exists():
+                        SKU.objects.create(code=code, description=description)
+                        added += 1
+                    else:
+                        skipped += 1
+
+                upload_feedback = f"{added} SKUs added. {skipped} duplicates skipped."
+
+    return render(request, 'management/add_skus.html', {
+        'form': form,
+        'skus': skus,
+        'upload_feedback': upload_feedback if 'upload_feedback' in locals() else '',
+        'upload_form': SKUUploadForm(),
+    })
+
+def delete_sku(request, sku_id):
+    sku = get_object_or_404(SKU, id=sku_id)
+    sku.delete()
+    return redirect('add_sku')
+
+def edit_sku(request, sku_id):
+    sku = get_object_or_404(SKU, id=sku_id)
+    if request.method == 'POST':
+        form = SKUForm(request.POST, instance=sku)
+        if form.is_valid():
+            form.save()
+            return redirect('add_sku')
+    else:
+        form = SKUForm(instance=sku)
+
+    return render(request, 'management/edit_sku.html', {
+        'form': form,
+        'sku': sku
+    })
+
+
 
