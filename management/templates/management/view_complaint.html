@@ -1,0 +1,219 @@
+{% include 'management/base.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Complaint - {{ complaint.complaint_id }}</title>
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #2a2a3d;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.4);
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #333348;
+            border-radius: 8px;
+        }
+
+        .media-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .media-item {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .comment-section {
+            margin-top: 30px;
+        }
+
+        .comment {
+            background-color: #333348;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .comment-form {
+            margin-top: 20px;
+        }
+
+        .comment-form textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background-color: #3a3a4f;
+            color: #fff;
+            border: 1px solid #444;
+        }
+
+        .log-section {
+            margin-top: 30px;
+        }
+
+        .log-entry {
+            padding: 10px;
+            border-left: 3px solid #4f8cff;
+            margin-bottom: 10px;
+            background-color: #333348;
+        }
+
+        .button {
+            background-color: #4f8cff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background-color: #3a6edc;
+        }
+
+        body.light-mode {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        body.light-mode .container {
+            background-color: #fff;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+
+        body.light-mode .section {
+            background-color: #f8f9fa;
+        }
+
+        body.light-mode .comment {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+
+        body.light-mode .comment-form textarea {
+            background-color: #fff;
+            color: #333;
+            border: 1px solid #ced4da;
+        }
+
+        body.light-mode .log-entry {
+            background-color: #f8f9fa;
+            border-left: 3px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Complaint Details - {{ complaint.complaint_id }}</h2>
+        
+        <div class="section">
+            <h3>Basic Information</h3>
+            <p><strong>Date:</strong> {{ complaint.date }}</p>
+            <p><strong>Status:</strong> {{ complaint.status }}</p>
+            <p><strong>Channel:</strong> {{ complaint.channel }}</p>
+            <p><strong>Country:</strong> {{ complaint.country }}</p>
+            <p><strong>Person:</strong> {{ complaint.person }}</p>
+            <p><strong>Case Category:</strong> {{ complaint.case_category }}</p>
+            <p><strong>Case Sub-Category:</strong> {{ complaint.case_sub_category }}</p>
+        </div>
+
+        <div class="section">
+            <h3>Vehicle Information</h3>
+            <p><strong>Brand:</strong> {{ complaint.brand }}</p>
+            <p><strong>Model:</strong> {{ complaint.model }}</p>
+            <p><strong>Sub-Model:</strong> {{ complaint.sub_model|default:"-" }}</p>
+            <p><strong>Year:</strong> {{ complaint.year }}</p>
+            <p><strong>SKU:</strong> {{ complaint.sku|default:"-" }}</p>
+        </div>
+
+        <div class="section">
+            <h3>Complaint Details</h3>
+            <p><strong>Description:</strong> {{ complaint.complaint_description }}</p>
+            <p><strong>Batch Order:</strong> {{ complaint.batch_order }}</p>
+            <p><strong>Factory Justification:</strong> {{ complaint.justification_from_factory|default:"-" }}</p>
+            <p><strong>Factory Action:</strong> {{ complaint.action_from_factory|default:"-" }}</p>
+        </div>
+
+        <div class="section">
+            <h3>Media Files</h3>
+            <div class="media-section">
+                {% for media in complaint.media_files.all %}
+                    {% if ".jpg" in media.file.url|lower or ".jpeg" in media.file.url|lower or ".png" in media.file.url|lower %}
+                        <img src="{{ media.file.url }}" class="media-item" onclick="enlargeImage(this.src)">
+                    {% elif ".mp4" in media.file.url|lower or ".webm" in media.file.url|lower %}
+                        <video class="media-item" controls>
+                            <source src="{{ media.file.url }}" type="video/mp4">
+                        </video>
+                    {% endif %}
+                {% empty %}
+                    <p>No media files available</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="section comment-section">
+            <h3>Comments</h3>
+            <form method="POST" class="comment-form">
+                {% csrf_token %}
+                <textarea name="comment" rows="4" placeholder="Add a comment..." required></textarea>
+                <button type="submit" class="button">Add Comment</button>
+            </form>
+
+            {% for comment in complaint.comments.all %}
+                <div class="comment">
+                    <div class="comment-header">
+                        <span>{{ comment.user.username }}</span>
+                        <span>{{ comment.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    <div class="comment-content">
+                        {{ comment.comment }}
+                    </div>
+                </div>
+            {% empty %}
+                <p>No comments yet</p>
+            {% endfor %}
+        </div>
+
+        <div class="section log-section">
+            <h3>Activity Log</h3>
+            {% for log in complaint.logs.all %}
+                <div class="log-entry">
+                    <p>
+                        <strong>{{ log.user.username }}</strong> 
+                        {{ log.action }} 
+                        <span style="color: #888">{{ log.timestamp|date:"M d, Y H:i" }}</span>
+                    </p>
+                    {% if log.details %}
+                        <p>{{ log.details }}</p>
+                    {% endif %}
+                </div>
+            {% empty %}
+                <p>No activity logs available</p>
+            {% endfor %}
+        </div>
+
+        <a href="{% url 'complaint_list' %}" class="button">Back to List</a>
+    </div>
+</body>
+</html>
