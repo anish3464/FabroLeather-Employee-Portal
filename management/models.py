@@ -2,7 +2,6 @@ from django.db import models
 import os
 import random
 import string
-from simple_history.models import HistoricalRecords
 class Brand(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
