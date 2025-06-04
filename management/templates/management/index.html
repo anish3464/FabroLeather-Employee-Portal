@@ -5,6 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fabro Leather - Car Seat Management</title>
     <link rel="stylesheet" href="/static/css/index.css">
+<script>
+    function logout() {
+        if (confirm("Are you sure you want to log out?")) {
+            window.location.href = "{% url 'logout_success' %}";
+        }
+    }
+    const lightModeToggle = document.getElementById('lightModeToggle');
+    document.addEventListener("DOMContentLoaded", () => {
+        const lightMode = localStorage.getItem('lightMode') === 'true';
+        lightModeToggle.checked = lightMode;
+        applyTheme(lightMode);
+    });
+
+    lightModeToggle.addEventListener('change', () => {
+        const isLight = lightModeToggle.checked;
+        localStorage.setItem('lightMode', isLight);
+        applyTheme(isLight);
+    });
+
+    function applyTheme(light) {
+        if (light) {
+            document.body.classList.add('light-mode');
+        } else {
+            document.body.classList.remove('light-mode');
+        }
+    }
+</script>
 </head>
 <body>
     <div class="topbar">
@@ -15,7 +42,7 @@
                 <div class="profile-dropdown-content">
                     <a>Signed in as <strong>{{ request.user.username }}</strong></a>
                     <div class="dropdown-divider"></div>
-                    <a href="{% url 'logout' %}">Logout</a>
+                    <a onclick="logout()">Logout</a>
                     <div class="dropdown-divider"></div>
                 <div style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
                     <label for="lightModeToggle" class="body">Light Mode</label>
@@ -45,33 +72,7 @@
         <div class="tile" onclick="window.location.href='{% url 'add_sku' %}'">
             <h2>Add SKU</h2>
         </div>
-        <div class="tile" onclick="window.location.href='{% url 'upload_car_csv' %}'">
-            <h2>Upload CSV</h2>
-        </div>
     </div>
 </body>
-<script>
-    const lightModeToggle = document.getElementById('lightModeToggle');
-    
-    // Apply saved preference on load
-    document.addEventListener("DOMContentLoaded", () => {
-        const lightMode = localStorage.getItem('lightMode') === 'true';
-        lightModeToggle.checked = lightMode;
-        applyTheme(lightMode);
-    });
 
-    lightModeToggle.addEventListener('change', () => {
-        const isLight = lightModeToggle.checked;
-        localStorage.setItem('lightMode', isLight);
-        applyTheme(isLight);
-    });
-
-    function applyTheme(light) {
-        if (light) {
-            document.body.classList.add('light-mode');
-        } else {
-            document.body.classList.remove('light-mode');
-        }
-    }
-</>
 </html>

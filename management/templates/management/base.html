@@ -190,41 +190,7 @@ body.light-mode .dropdown-divider {
 .toggle-switch input:checked + .slider:before {
   transform: translateX(28px);
 }
-
-
 </style>
-
-<div class="navbar">
-    <div class="nav-left">
-        <a href="{% url 'index' %}">Home</a>
-            <a href="{% url 'add_complaint' %}">Add Complaint</a>
-            <a href="{% url 'add_car_details' %}">Add Car</a>
-            <a href="{% url 'master_settings' %}">Master Settings</a>
-            <a href="{% url 'complaint_list' %}">Complaint List</a>
-            <a href="{% url 'add_sku' %}">Add SKU</a>
-            <a href="{% url 'upload_car_csv' %}">Upload CSV</a>
-    </div>
-    
-    <div class="nav-right">
-        <div class="profile-dropdown">
-            <div class="profile-icon">👤 Profile</div>
-            <div class="profile-dropdown-content">
-                <a>Signed in as <strong>{{ request.user.username }}</strong></a>
-                <div class="dropdown-divider"></div>
-                <a href="{% url 'logout' %}">Logout</a>
-                <div class="dropdown-divider"></div>
-                <div style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
-                    <label for="lightModeToggle" class="body">Light Mode</label>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="lightModeToggle">
-                        <span class="slider"></span>
-                    </label>
-
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 <script>
     const lightModeToggle = document.getElementById('lightModeToggle');
 
@@ -248,6 +214,43 @@ body.light-mode .dropdown-divider {
             document.body.classList.remove('light-mode');
         }
     }
+    function logout() {
+        if (confirm("Are you sure you want to log out?")) {
+            window.location.href = "{% url 'logout_success' %}";
+        }
+    }
 </script>
+<div class="navbar">
+    <div class="nav-left">
+        <a href="{% url 'index' %}">Home</a>
+            <a href="{% url 'add_complaint' %}">Add Complaint</a>
+            <a href="{% url 'add_car_details' %}">Add Car</a>
+            <a href="{% url 'master_settings' %}">Master Settings</a>
+            <a href="{% url 'complaint_list' %}">Complaint List</a>
+            <a href="{% url 'add_sku' %}">Add SKU</a>
+            <a href="{% url 'upload_car_csv' %}">Upload Car CSV</a>
+    </div>
+    
+    <div class="nav-right">
+        <div class="profile-dropdown">
+            <div class="profile-icon">👤 Profile</div>
+            <div class="profile-dropdown-content">
+                <a>Signed in as <strong>{{ request.user.username }}</strong></a>
+                <div class="dropdown-divider"></div>
+                <a onclick="logout()">Logout</a>
+                <div class="dropdown-divider"></div>
+                <div style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+                    <label for="lightModeToggle" class="body">Light Mode</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="lightModeToggle">
+                        <span class="slider"></span>
+                    </label>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
     

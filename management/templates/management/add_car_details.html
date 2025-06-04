@@ -33,6 +33,7 @@
 
     <button type="submit">Add Car Details</button>
 </form>
+<a onclick="window.location.href='{% url 'upload_car_csv' %}'">Upload Car CSV</a>
 
 
     <h3>Existing Car Details</h3>
@@ -359,6 +360,16 @@ ul::-webkit-scrollbar-track {
     to { opacity: 1; transform: scale(1); }
 }
 
+.upload-button {
+    background-color: #3a3a4f;
+    color: #ffffff;
+    padding: 50px 20px;
+    text-align: center;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    transition: all 0.3s;
+}
 .car-table {
     width: 100%;
     border-collapse: collapse;
