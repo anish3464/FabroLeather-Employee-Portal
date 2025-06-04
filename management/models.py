@@ -3,9 +3,6 @@ import os
 import random
 import string
 from simple_history.models import HistoricalRecords
-from django.contrib.auth.models import User
-from django.utils import timezone
-
 class Brand(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
@@ -76,7 +73,6 @@ class MasterSetting(models.Model):
     
 def generate_complaint_id():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-
 class Complaint(models.Model):
     complaint_id = models.CharField(primary_key=True, max_length=10, unique=True, default=generate_complaint_id)
     date = models.DateField(auto_now_add=False)
@@ -139,19 +135,9 @@ class Complaint(models.Model):
     batch_order = models.CharField(max_length=100)
     justification_from_factory = models.TextField(blank=True, null=True)
     action_from_factory = models.TextField(blank=True, null=True)
-    history = HistoricalRecords()
 
     def save(self, *args, **kwargs):
-        is_new = self._state.adding
-        super().save(*args, **kwargs)
-
-        if is_new:
-            ComplaintLog.objects.create(
-                complaint=self,
-                user=kwargs.get('user', None),
-                action="Created complaint",
-                details="New complaint created"
-            )
+        super().save(*args, **kwargs)    
 
     def __str__(self):
         return self.complaint_id
@@ -165,29 +151,6 @@ class ComplaintMedia(models.Model):
 
     def __str__(self):
         return os.path.basename(self.file.name)
+    
 
-class ComplaintComment(models.Model):
-    complaint = models.ForeignKey(Complaint, on_delete=models.CASCADE, related_name='comments')
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    comment = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return f'Comment by {self.user.username} on {self.complaint.complaint_id}'
-
-class ComplaintLog(models.Model):
-    complaint = models.ForeignKey(Complaint, on_delete=models.CASCADE, related_name='logs')
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    action = models.CharField(max_length=255)  # e.g., "Updated status", "Added comment"
-    timestamp = models.DateTimeField(auto_now_add=True)
-    details = models.TextField(blank=True, null=True)  # Additional details about the change
-
-    class Meta:
-        ordering = ['-timestamp']
-
-    def __str__(self):
-        return f'{self.user.username} {self.action} on {self.complaint.complaint_id}'
