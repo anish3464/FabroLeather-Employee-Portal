@@ -43,6 +43,7 @@
 <table class="car-table">
     <thead>
         <tr>
+            <th>Sl. No.</th>
             <th>Layout Code</th>
             <th>Brand</th>
             <th>Model</th>
@@ -56,6 +57,7 @@
     <tbody>
         {% for car in car_data %}
             <tr>
+                <td>{{ forloop.counter }}</td>
                 <td>{{ car.layout_code}}</td>
                 <td>{{ car.brand }}</td>
                 <td>{{ car.model }}</td>

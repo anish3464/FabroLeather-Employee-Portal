@@ -343,17 +343,6 @@ body.light-mode .action-buttons a {
             <option value="material" {% if search_by == 'material' %}selected{% endif %}>Material</option>            
         </select>
 
-
-    
-    <select name="case_type">
-        <option value="">All Case Types</option>
-        {% for case_type in case_types %}
-            <option value="{{ case_type.id }}" {% if selected_case_type == case_type.id|stringformat:"s" %}selected{% endif %}>
-                {{ case_type.name }}
-            </option>
-        {% endfor %}
-    </select>
-
     <select name="channel">
         <option value="">All Channels</option>
         {% for channel in channels %}
@@ -387,6 +376,25 @@ body.light-mode .action-buttons a {
             <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status }}</option>
         {% endfor %}
     </select>
+
+    <select name="case_category">
+        <option value="">All Case Categories</option>
+        {% for category in case_categories %}
+        {% endfor %}
+            <option value="{{ category.id }}" {% if selected_case_category == category.id|stringformat:"s" %}selected{% endif %}>
+                {{ category.name }}
+            </option>
+    </select>
+
+    <select name="case_sub_category">
+        <option value="">All Case Sub-Categories</option>
+        {% for sub_category in case_sub_categories %}
+        {% endfor %}
+            <option value="{{ sub_category.id }}" {% if selected_case_sub_category == sub_category.id|stringformat:"s" %}selected{% endif %}>
+                {{ sub_category.name }}
+            </option>
+    </select>
+
 
     <input type="date" name="from_date" value="{{ from_date }}">
     <input type="date" name="to_date" value="{{ to_date }}">

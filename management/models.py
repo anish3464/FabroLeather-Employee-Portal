@@ -2,6 +2,7 @@ from django.db import models
 import os
 import random
 import string
+from simple_history.models import HistoricalRecords
 class Brand(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
@@ -80,7 +81,8 @@ class Complaint(models.Model):
         on_delete=models.SET_NULL, 
         null=True, 
         limit_choices_to={'category': 'Channel'}, 
-        related_name="complaints_as_channel"
+        related_name="complaints_as_channel",
+        default="Whatsapp"
     )
     country = models.ForeignKey(
         'management.MasterSetting', 
@@ -130,10 +132,10 @@ class Complaint(models.Model):
     sub_model = models.ForeignKey('management.SubModel', on_delete=models.SET_NULL, null=True, blank=True)
     year = models.ForeignKey('management.YearRange', on_delete=models.SET_NULL, null=True)
     status = models.CharField(max_length=10, choices=[('Open', 'Open'), ('Closed', 'Closed'), ('On Hold', 'On Hold')], default='Open')
-    complaint_description = models.TextField()
+    complaint_description = models.TextField(default="Not Provided")
     batch_order = models.CharField(max_length=100)
-    justification_from_factory = models.TextField(blank=True, null=True)
-    action_from_factory = models.TextField(blank=True, null=True)
+    justification_from_factory = models.TextField(blank=True, null=True, default="Not Provided")
+    action_from_factory = models.TextField(blank=True, null=True,  default="Not Provided")
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)    

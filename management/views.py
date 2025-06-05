@@ -246,8 +246,9 @@ def complaint_list(request):
     selected_country = request.GET.get('country')
     selected_status = request.GET.get('status')
     selected_channel = request.GET.get('channel')
-    selected_case_type = request.GET.get('case_type')
     selected_person = request.GET.get('person')
+    selected_case_category = request.GET.get('case_category')
+    selected_case_sub_category = request.GET.get('case_sub_category')
 
     from_date = request.GET.get('from_date')
     to_date = request.GET.get('to_date')
@@ -259,8 +260,6 @@ def complaint_list(request):
         complaints = complaints.filter(status=selected_status)
     if selected_channel:
         complaints = complaints.filter(channel=selected_channel)
-    if selected_case_type:
-        complaints = complaints.filter(case_type=selected_case_type)
     if selected_person:
         complaints = complaints.filter(person=selected_person) 
 
@@ -275,6 +274,12 @@ def complaint_list(request):
 
     if to_date:
         complaints = complaints.filter(date__lte=parse_date(to_date))
+
+    if selected_case_category:
+        complaints = complaints.filter(case_category=selected_case_category)
+
+    if selected_case_sub_category:
+        complaints = complaints.filter(case_sub_category=selected_case_sub_category)
 
     brands = Brand.objects.all()
     countries = MasterSetting.objects.filter(id__in=Complaint.objects.values_list('country', flat=True).distinct())
@@ -303,11 +308,12 @@ def complaint_list(request):
         'country_data': country_data,
         'search_query': search_query,
         'search_by': search_by,
+        'selected_case_category': selected_case_category,
+        'selected_case_sub_category': selected_case_sub_category,
         'selected_brand': selected_brand,
         'selected_country': selected_country,
         'selected_status': selected_status,
         'selected_channel': selected_channel,
-        'selected_case_type': selected_case_type,
         'selected_person': selected_person,
         'selected_status': selected_status,
         'from_date': from_date,
